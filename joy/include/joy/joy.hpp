@@ -67,6 +67,7 @@ private:
   void feedbackCb(const std::shared_ptr<sensor_msgs::msg::JoyFeedback> msg);
 
   int dev_id_{0};
+  bool single_controller_mode_;
 
   SDL_Joystick * joystick_{nullptr};
   SDL_Haptic * haptic_{nullptr};
@@ -84,10 +85,13 @@ private:
   std::thread event_thread_;
   std::shared_future<void> future_;
   std::promise<void> exit_signal_;
+  rclcpp::Publisher<sensor_msgs::msg::Joy>::SharedPtr base_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::Joy>::SharedPtr arm_pub_;
   rclcpp::Publisher<sensor_msgs::msg::Joy>::SharedPtr pub_;
   rclcpp::Subscription<sensor_msgs::msg::JoyFeedback>::SharedPtr feedback_sub_;
 
   sensor_msgs::msg::Joy joy_msg_;
+  bool baseOnArmOff = true;
 };
 
 }  // namespace joy

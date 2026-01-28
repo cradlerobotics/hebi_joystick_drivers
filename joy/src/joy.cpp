@@ -54,6 +54,8 @@ Joy::Joy(const rclcpp::NodeOptions & options)
   dev_id_ = static_cast<int>(this->declare_parameter("device_id", 0));
 
   dev_name_ = this->declare_parameter("device_name", std::string(""));
+  this->declare_parameter("single_controller_mode", false);
+  this->get_parameter("single_controller_mode", single_controller_mode_);
 
   // The user specifies the deadzone to us in the range of 0.0 to 1.0.  Later on
   // we'll convert that to the range of 0 to 32767.  Note also that negatives
@@ -96,6 +98,8 @@ Joy::Joy(const rclcpp::NodeOptions & options)
   // to use it; this ensures that we are always using the correct time source.
   publish_soon_time_ = this->now();
 
+  base_pub_ = create_publisher<sensor_msgs::msg::Joy>("base/joy", 10);
+  arm_pub_ = create_publisher<sensor_msgs::msg::Joy>("arm/joy", 10);
   pub_ = create_publisher<sensor_msgs::msg::Joy>("joy", 10);
 
   feedback_sub_ = this->create_subscription<sensor_msgs::msg::JoyFeedback>(
@@ -477,7 +481,23 @@ void Joy::eventThread()
       joy_msg_.header.frame_id = "joy";
       joy_msg_.header.stamp = this->now();
 
-      pub_->publish(joy_msg_);
+      if(!single_controller_mode_){
+        pub_->publish(joy_msg_);
+      }
+      else{
+        if(joy_msg_.buttons.at(6) == 1){
+          baseOnArmOff = true;
+        }
+        else if(joy_msg_.buttons.at(7) == 1){
+          baseOnArmOff = false;
+        }
+        if(baseOnArmOff){
+          base_pub_->publish(joy_msg_);
+        }
+        else{
+          arm_pub_->publish(joy_msg_);
+        }
+      }
     }
 
     status = future_.wait_for(std::chrono::seconds(0));
